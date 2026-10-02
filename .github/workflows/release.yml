@@ -1,0 +1,75 @@
+name: Release
+
+# A release is built from a version tag:
+#   git tag v0.2.0 && git push origin v0.2.0
+# or manually from the Actions tab for an existing tag (e.g. to rebuild it).
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to release, e.g. v0.1.0"
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+  TAG: ${{ inputs.tag || github.ref_name }}
+
+jobs:
+  release:
+    name: Build and publish ${{ inputs.tag || github.ref_name }}
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ env.TAG }}
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Check version and extract release notes
+        shell: bash
+        run: ./scripts/release-notes.sh "$TAG" release-notes.md
+
+      - name: Download WinDivert
+        shell: pwsh
+        run: ./scripts/fetch-windivert.ps1 -Dest vendor/windivert
+
+      - name: Tests
+        run: cargo test --workspace
+      - name: End-to-end tests (real WinDivert driver)
+        env:
+          PM_WINDIVERT_DIR: ${{ github.workspace }}\vendor\windivert
+        run: cargo test -p pm-app --test e2e_windows -- --ignored --test-threads=1
+
+      - name: Build release
+        run: cargo build --release -p pm-app
+      - name: Package
+        shell: pwsh
+        run: ./scripts/package.ps1 -Version $env:TAG
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ProxyManager-${{ env.TAG }}-windows-x64
+          path: dist/ProxyManager-*-windows-x64.zip*
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ env.TAG }}
+          name: Proxy Manager ${{ env.TAG }}
+          body_path: release-notes.md
+          prerelease: ${{ contains(env.TAG, '-') }}
+          fail_on_unmatched_files: true
+          overwrite_files: true
+          files: |
+            dist/ProxyManager-${{ env.TAG }}-windows-x64.zip
+            dist/ProxyManager-${{ env.TAG }}-windows-x64.zip.sha256

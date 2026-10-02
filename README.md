@@ -35,7 +35,7 @@
 
 ## Установка
 
-1. Скачайте `ProxyManager-windows-x64.zip` из Releases или артефактов CI и распакуйте.
+1. Скачайте `ProxyManager-vX.Y.Z-windows-x64.zip` со страницы [Releases](https://github.com/SeniorK0tik/ProxyManager/releases) и распакуйте.
 2. Проверьте, что рядом с `proxy-manager.exe` лежат `WinDivert.dll` и `WinDivert64.sys`.
 3. Запустите `proxy-manager.exe`. Программа попросит права администратора: без них WinDivert не работает.
 
@@ -100,7 +100,24 @@ cargo llvm-cov --workspace --summary-only    # покрытие
   cargo test -p pm-app --test e2e_windows -- --ignored --test-threads=1
   ```
 
-CI (GitHub Actions) выполняет fmt, clippy (в том числе под Windows-таргет), тесты с покрытием (порог 90% строк) на Linux, а на Windows — тесты, e2e с WinDivert, сборку и упаковку zip. Для тегов `v*` CI публикует релиз.
+CI (GitHub Actions) выполняет fmt, clippy (в том числе под Windows-таргет), тесты с покрытием (порог 90% строк) на Linux, а на Windows — тесты, e2e с WinDivert, сборку и упаковку zip. Релизы собирает отдельный workflow (см. «Релизы»).
+
+## Релизы
+
+История изменений ведётся в [`CHANGELOG.md`](CHANGELOG.md). Раздел версии становится описанием релиза.
+
+Как выпустить новую версию:
+
+1. Поднимите `version` в `[workspace.package]` корневого `Cargo.toml`.
+2. Перенесите записи из `## [Unreleased]` в новый раздел `## [X.Y.Z] - ГГГГ-ММ-ДД` и добавьте ссылку внизу файла.
+3. Закоммитьте изменения и отправьте тег:
+
+   ```bash
+   git tag vX.Y.Z
+   git push origin main vX.Y.Z
+   ```
+
+Workflow **Release** проверяет, что версия тега совпадает с `Cargo.toml` и что для неё есть раздел в changelog. Затем он прогоняет тесты (включая e2e с WinDivert), собирает `ProxyManager-vX.Y.Z-windows-x64.zip` с файлом `.sha256` и публикует GitHub Release. Теги с дефисом (`v1.0.0-rc.1`) публикуются как pre-release. Пересобрать существующий тег можно вручную: Actions → Release → Run workflow.
 
 ## Ограничения
 

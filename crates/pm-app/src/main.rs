@@ -87,7 +87,7 @@ fn main() -> anyhow::Result<()> {
     };
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_title("Proxy Manager")
+            .with_title(format!("Proxy Manager {}", env!("CARGO_PKG_VERSION")))
             .with_inner_size([1040.0, 700.0])
             .with_min_inner_size([760.0, 480.0])
             .with_icon(icon),
