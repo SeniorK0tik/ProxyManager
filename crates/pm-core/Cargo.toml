@@ -1,0 +1,27 @@
+[package]
+name = "pm-core"
+description = "Platform-independent core of Proxy Manager: config, rules, NAT engine, proxy clients and relay"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+base64.workspace = true
+chrono.workspace = true
+ipnet.workspace = true
+parking_lot.workspace = true
+serde.workspace = true
+socket2.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+toml.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { workspace = true, features = ["test-util"] }
+
+[features]
+# Exposes mock proxies and packet builders for tests in other crates.
+test-util = []

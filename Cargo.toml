@@ -1,0 +1,31 @@
+[workspace]
+resolver = "3"
+members = ["crates/pm-core", "crates/pm-windows", "crates/pm-app"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+repository = "https://github.com/SeniorK0tik/ProxyManager"
+
+[workspace.dependencies]
+pm-core = { path = "crates/pm-core" }
+pm-windows = { path = "crates/pm-windows" }
+
+anyhow = "1"
+base64 = "0.23"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+ipnet = { version = "2", features = ["serde"] }
+parking_lot = "0.12"
+serde = { version = "1", features = ["derive"] }
+socket2 = { version = "0.6", features = ["all"] }
+thiserror = "2"
+tokio = { version = "1", features = ["rt-multi-thread", "net", "io-util", "time", "sync", "macros"] }
+toml = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "registry", "fmt"] }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

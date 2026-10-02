@@ -1,0 +1,26 @@
+[package]
+name = "pm-windows"
+description = "Windows integration for Proxy Manager: WinDivert interception, connection owner lookup, firewall, elevation"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+pm-core.workspace = true
+parking_lot.workspace = true
+tracing.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+libloading = "0.9"
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_NetworkManagement_IpHelper",
+    "Win32_Networking_WinSock",
+    "Win32_Security",
+    "Win32_System_Threading",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[dev-dependencies]
+pm-core = { workspace = true, features = ["test-util"] }

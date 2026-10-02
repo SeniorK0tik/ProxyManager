@@ -1,0 +1,38 @@
+[package]
+name = "pm-app"
+description = "Proxy Manager: per-application proxy routing for Windows"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "proxy-manager"
+path = "src/main.rs"
+
+[dependencies]
+pm-core.workspace = true
+anyhow.workspace = true
+ipnet.workspace = true
+eframe = { version = "0.36", default-features = false, features = ["default_fonts", "glow"] }
+parking_lot.workspace = true
+thiserror.workspace = true
+sysinfo = { version = "0.39", default-features = false, features = ["system"] }
+tokio.workspace = true
+tracing.workspace = true
+tracing-appender = "0.2"
+tracing-subscriber.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+pm-windows.workspace = true
+rfd = "0.17"
+tray-icon = "0.26"
+
+[target.'cfg(not(windows))'.dependencies]
+# winit needs a windowing backend on Linux (development builds only).
+eframe = { version = "0.36", default-features = false, features = ["x11", "wayland"] }
+
+[dev-dependencies]
+pm-core = { workspace = true, features = ["test-util"] }
+tempfile = "3"
+chrono.workspace = true
+egui_kittest = "0.36"

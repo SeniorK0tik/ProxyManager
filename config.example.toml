@@ -1,0 +1,54 @@
+# Proxy Manager configuration example.
+# The real file lives in %APPDATA%\ProxyManager\config.toml and is normally edited from the UI.
+
+[general]
+# Applications that match no rule: "direct", "block" or "proxy:<name>".
+default_action = "direct"
+# Drop UDP of proxied applications (UDP is not tunnelled; browsers fall back from QUIC to TCP).
+block_udp = true
+# Always let DNS (UDP port 53) through.
+allow_dns = true
+# Destinations that never go through a proxy.
+bypass = [
+    "0.0.0.0/8", "10.0.0.0/8", "127.0.0.0/8", "169.254.0.0/16", "172.16.0.0/12",
+    "192.168.0.0/16", "224.0.0.0/4", "255.255.255.255/32",
+    "::1/128", "fc00::/7", "fe80::/10", "ff00::/8",
+]
+connect_timeout_secs = 10
+# Start proxying as soon as the program starts.
+autostart = false
+# Closing the window hides the program to the tray.
+close_to_tray = true
+
+[[proxy]]
+name = "home"
+kind = "socks5"          # socks5 | http
+host = "127.0.0.1"
+port = 1080
+# username = "user"
+# password = "secret"
+
+[[proxy]]
+name = "work"
+kind = "http"
+host = "proxy.example.com"
+port = 3128
+username = "user"
+password = "secret"
+
+# Rules are checked top to bottom, the first match wins.
+[[rule]]
+name = "Browsers"
+apps = ["chrome.exe", "firefox.exe", "msedge.exe"]
+action = "proxy:home"
+
+[[rule]]
+name = "Telegram"
+apps = ["*\\Telegram Desktop\\*.exe"]
+action = "proxy:work"
+
+[[rule]]
+name = "No network for this one"
+enabled = true
+apps = ["C:\\Games\\SomeGame\\game.exe"]
+action = "block"

@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  linux:
+    name: Linux · fmt, clippy, tests, coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy, llvm-tools-preview
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Format
+        run: cargo fmt --all --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets
+      - name: Clippy (Windows target)
+        run: |
+          rustup target add x86_64-pc-windows-gnu
+          cargo clippy --workspace --all-targets --target x86_64-pc-windows-gnu
+
+      - name: Tests with coverage
+        run: cargo llvm-cov --workspace --no-report
+      - name: Coverage report
+        run: |
+          cargo llvm-cov report --summary-only --fail-under-lines 90 | tee coverage.txt
+          cargo llvm-cov report --lcov --output-path lcov.info
+          {
+            echo '### Coverage (Linux)'
+            echo '```'
+            cat coverage.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-linux
+          path: |
+            lcov.info
+            coverage.txt
+
+  windows:
+    name: Windows · tests, e2e, package
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, llvm-tools-preview
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Download WinDivert
+        shell: pwsh
+        run: ./scripts/fetch-windivert.ps1 -Dest vendor/windivert
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets
+      - name: Tests with coverage
+        run: cargo llvm-cov --workspace --no-report
+
+      - name: Build release
+        run: cargo build --release -p pm-app
+      - name: Package
+        shell: pwsh
+        run: ./scripts/package.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ProxyManager-windows-x64
+          path: dist/ProxyManager-windows-x64.zip
+
+      - name: End-to-end tests (real WinDivert driver)
+        env:
+          PM_WINDIVERT_DIR: ${{ github.workspace }}\vendor\windivert
+        run: cargo llvm-cov --no-report -p pm-app --test e2e_windows -- --ignored --test-threads=1 --nocapture
+
+      - name: Coverage report
+        if: always()
+        shell: bash
+        run: |
+          cargo llvm-cov report --summary-only | tee coverage.txt
+          {
+            echo '### Coverage (Windows, unit + e2e)'
+            echo '```'
+            cat coverage.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/ProxyManager-windows-x64.zip
